@@ -51,10 +51,12 @@
 </template>
 
 <script>
-    export default {
-        
-        name: 'TodoApp2',
+    const getLocalStorageData = () => JSON.parse(localStorage.getItem("todoList"));
+    let todoTaskData = [];
+    if (getLocalStorageData()) todoTaskData = getLocalStorageData();    
 
+    export default {        
+        name: 'TodoApp2',
         data() {
             return {
                 inputValue: '',
@@ -63,28 +65,29 @@
                 availableStatuses: ['to-do', 'In-progress', 'Completed'],
                 show: false,
 
-                tasksArray: [
-                    {
-                        name: 'Make To Do List',
-                        status: 'to-do'
-                    },
-                    {
-                        name: 'Check off first things on list',
-                        status: 'to-do'
-                    },
-                    {
-                        name: 'Ralize you are already accomplished 2 things',
-                        status: 'to-do'
-                    },
-                    {
-                        name: 'Reward yourslef with nap',
-                        status: 'to-do'
-                    },
-                    {
-                        name: 'Banana is the best fruit for weight gaining.',
-                        status: 'to-do'
-                    },
-                ]
+                // tasksArray: [
+                //     {
+                //         name: 'Make To Do List',
+                //         status: 'to-do'
+                //     },
+                //     {
+                //         name: 'Check off first things on list',
+                //         status: 'to-do'
+                //     },
+                //     {
+                //         name: 'Ralize you are already accomplished 2 things',
+                //         status: 'to-do'
+                //     },
+                //     {
+                //         name: 'Reward yourslef with nap',
+                //         status: 'to-do'
+                //     },
+                //     {
+                //         name: 'Banana is the best fruit for weight gaining.',
+                //         status: 'to-do'
+                //     },
+                // ]
+                tasksArray: todoTaskData,
             }    
         },
 
@@ -97,10 +100,8 @@
                         name: this.inputValue,
                         status: 'to-do'
                     })
-                    localStorage.setItem('todoList', JSON.stringify(this.tasksArray.push({
-                        name: this.inputValue,
-                        status: 'to-do'
-                    })))
+                    let allTaskData = this.tasksArray;
+                    localStorage.setItem('gittodoList', JSON.stringify(allTaskData))
                 } else {
                     if(this.textEdited !== this.inputValue) {
                         if(confirm('You have edited the task. \nAre you sure want to cancel?')) {
