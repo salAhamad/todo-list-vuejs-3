@@ -1,11 +1,14 @@
 <template>
     <div class="todo-app-container">
-        <div class="container" style="max-width: 650px;">
+        <div class="container" style="max-width: 750px;">
             <h3 class="mb-4 fw-bold text-center">My First ToDo Application in VueJs@3</h3>
             <hr />
             <div class="todo-input-block d-flex positive-relative">
                 <input v-model="inputValue" :class="{'is-invalid': show }" class="form-control form-control-lg" type="text" placeholder="Enter Todo list to Add" />
-                <button @click="submitTask" class="btn btn-primary ms-3 white-space-nowrap px-4 fw-bold">Add ToDo List</button>
+                <button @click="closeEditing" :class="this.editedStatus !== null ? '' : 'd-none'" class="close-editing btn btn-outline-danger" role="button">&times;</button>
+                <button @click="submitTask" class="btn btn-primary white-space-nowrap px-3 fw-bold">
+                    {{this.editedStatus !== null ? 'Update ToDo List' : 'Add ToDo List'}} 
+                </button>
             </div>
             <small v-show="show" class="text-danger input-error">
                 Please, Enter the task <strong>Heading!</strong>
@@ -17,13 +20,17 @@
                     <h6 class="list-status mb-0 p-3 ps-0 pe-2" style="min-width: 110px">Status</h6>
                     <h6 class="list-action mb-0 p-3 px-0" style="min-width: 90px">Action</h6>
                 </div>
-                <div v-for="(task, index) in tasksArray" :key="index" class="list-row d-flex" 
+                <div 
+                    v-for="(task, index) in tasksArray" 
+                    :key="index" 
                     :class="{
                         'text-decoration-line-through': task.status === 'Completed',
                         'completed': task.status === 'Completed',
                         'in-progress': task.status === 'In-progress',
-                    }
-                ">
+                        'editing-enabled': index === this.editedStatus,
+                    }"
+                    :data-index="index"
+                    class="list-row d-flex">
                     <h6 class="list-name mb-0 p-3 w-100">{{task.name}}</h6>
                     <h6 
                         @click="changeStatus(index)" 
@@ -51,10 +58,7 @@
 </template>
 
 <script>
-    const getLocalStorageData = () => JSON.parse(localStorage.getItem("todoList"));
-    let todoTaskData = [];
-    if (getLocalStorageData()) todoTaskData = getLocalStorageData();    
-
+    
     export default {        
         name: 'TodoApp2',
         data() {
@@ -64,7 +68,7 @@
                 textEdited: null,
                 availableStatuses: ['to-do', 'In-progress', 'Completed'],
                 show: false,
-
+                tasksArray: [],
                 // tasksArray: [
                 //     {
                 //         name: 'Make To Do List',
@@ -87,8 +91,12 @@
                 //         status: 'to-do'
                 //     },
                 // ]
-                tasksArray: todoTaskData,
             }    
+        },
+        mounted() {
+            if (localStorage.todoList) {
+                this.tasksArray = JSON.parse(localStorage.todoList);
+            }
         },
 
         methods: {
@@ -100,45 +108,57 @@
                         name: this.inputValue,
                         status: 'to-do'
                     })
-                    let allTaskData = this.tasksArray;
-                    localStorage.setItem('gittodoList', JSON.stringify(allTaskData))
+                    localStorage.setItem('todoList', JSON.stringify(this.tasksArray))
                 } else {
-                    if(this.textEdited !== this.inputValue) {
-                        if(confirm('You have edited the task. \nAre you sure want to cancel?')) {
-                            this.tasksArray[this.editedStatus].name = this.inputValue;
-                            this.editedStatus = null;
-                        } else {
-                            this.editedStatus = null;
-                            this.inputValue = '';
-                        }
-                    }
-
+                    this.taskEdited();
                 }
 
-                this.inputValue = '';
+                this.closeEditing();
                 this.show = false
+            },
+            
+            taskEdited() {
+                if(this.textEdited !== this.inputValue) {
+                    if(confirm('You have edited the task. \nAre you sure want to cancel?')) {
+                        this.tasksArray[this.editedStatus].name = this.inputValue;
+                        localStorage.setItem('todoList', JSON.stringify(this.tasksArray));
+                        this.editedStatus = null;
+                    } else {
+                        this.closeEditing();
+                    }
+                }
+
             },
 
             editTask(index) {
+                // this.taskEdited();
                 this.inputValue = this.tasksArray[index].name;
                 this.textEdited = this.tasksArray[index].name;
                 this.editedStatus = index;
-                console.log(this.textEdited)
-                this.show = false
+                this.show = false                
+            },
+            closeEditing() {
+                this.editedStatus = null;
+                this.inputValue = '';
             },
 
             deleteTask(index) {
                 this.tasksArray.splice(index, 1)
+                let allTaskData = this.tasksArray;
+                console.table(allTaskData);
+                localStorage.setItem('todoList', JSON.stringify(allTaskData))
             },
 
             changeStatus(index) {
                 let newIndex = this.availableStatuses.indexOf(this.tasksArray[index].status);
                 if(++newIndex > 2) newIndex = 0
                 this.tasksArray[index].status = this.availableStatuses[newIndex];
+                localStorage.setItem('todoList', JSON.stringify(this.tasksArray));
             },
+
             firstCharactor(str) {
                 return str.charAt(0).toUpperCase() + str.slice(1);
-            }
+            },
         }
     }
 </script>
@@ -151,6 +171,16 @@
         background-color: #e7f1f3;
         padding: 5vw;
     }
+    .todo-input-block {
+        gap: .75rem;
+        .close-editing {
+            font-size: 1rem * 1.75;
+            line-height: 0;
+            &:not(:hover) {
+                background-color: #fff;
+            }
+        }
+    }
     .white-space-nowrap { white-space: nowrap; }
     .list-items {
         position: relative;
@@ -159,8 +189,12 @@
         .list-row {
             position: relative;
             border-bottom: 1px solid #ccc;
-            &:hover {
-                background-color: #f1f1f1;
+            &:hover { background-color: #f1f1f1; }
+            &.editing-enabled {
+                background-color: rgba(#0d6efd, 0.1);
+                box-shadow: 
+                    inset 0 0 0 2px #ffffff,
+                    inset 0 0 0 4px #0d6efd;
             }
             &.list-row-head {
                 background-color: #607d8b;
